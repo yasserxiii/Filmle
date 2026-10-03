@@ -1,0 +1,358 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Filmle</title><style>
+:root{--bg:#090b10;--p:#121620;--p2:#1a202b;--t:#f4f5f7;--m:#9ca3af;--g:#2e9d68;--y:#b98632;--r:#a64d56;--line:#2b3140}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% -20%,#252b3b,#090b10 45%);color:var(--t);font-family:system-ui,Segoe UI,Arial,sans-serif}.wrap{max-width:1100px;margin:auto;padding:25px 16px 50px}.top{display:flex;justify-content:space-between;align-items:center;gap:15px}.brand{font-size:28px;font-weight:800}.brand span{color:#e8b94d}.sub,.help,.muted{color:var(--m)}button{border:1px solid var(--line);background:var(--p);color:var(--t);padding:10px 14px;border-radius:10px;cursor:pointer}.hero{text-align:center;margin:42px 0 22px}.hero h1{font-size:38px;margin:0}.stats{display:flex;justify-content:center;gap:10px;margin:16px}.pill{background:var(--p);border:1px solid var(--line);padding:7px 12px;border-radius:99px;color:var(--m)}.search{max-width:760px;margin:auto;position:relative}.search input{width:100%;padding:16px;border:1px solid var(--line);border-radius:14px;background:#10141c;color:#fff;font-size:17px}.suggestions{position:absolute;left:0;right:0;top:58px;background:#171c25;border:1px solid var(--line);border-radius:12px;overflow:hidden;z-index:5}.suggestion{padding:12px 15px;display:flex;justify-content:space-between;cursor:pointer}.suggestion:hover{background:#252c38}.board{margin-top:15px;overflow:auto;border:1px solid var(--line);border-radius:15px}.row{display:grid;grid-template-columns:1.7fr repeat(6,1fr);min-width:760px}.cell{min-height:62px;padding:10px 8px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center;text-align:center}.head{min-height:44px;background:#171c27;color:#aeb4c0;font-size:12px;text-transform:uppercase;font-weight:700}.movie{justify-content:flex-start;text-align:left;font-weight:700}.movie small{display:block;color:var(--m);font-weight:400;margin-top:3px}.match{background:#1b5b3e}.partial{background:#614919}.wrong{background:#4e252b}.arrow{margin-left:6px}.empty{text-align:center;padding:42px;color:var(--m)}.help{text-align:center;margin-top:16px;font-size:13px}.modal{display:none;position:fixed;inset:0;background:#000b;align-items:center;justify-content:center;padding:20px}.modal.show{display:flex}.modalbox{background:#151a24;border:1px solid var(--line);border-radius:18px;padding:25px;max-width:500px;width:100%}.answer{font-size:28px;font-weight:800;margin-top:15px}.win{color:#77e4ac;font-weight:800}@media(max-width:700px){.top{align-items:flex-start}.hero h1{font-size:30px}}
+.game-buttons{
+    display:flex;
+    gap:8px;
+}
+.mode{
+    display:inline-block;
+    margin-bottom:10px;
+    padding:6px 12px;
+    border:1px solid var(--line);
+    border-radius:99px;
+    background:var(--p);
+    color:var(--m);
+    font-size:13px;
+    font-weight:700;
+}
+@media(max-width:700px){
+    .top{align-items:flex-start}
+    .hero h1{font-size:30px}
+}
+</style></head><body><main class="wrap"><header class="top"><div><div class="brand">Filmle</div><div class="sub">The Egyptian movie guessing game</div></div><div class="game-buttons">
+    <button onclick="dailyGame()">Daily Film</button>
+    <button onclick="newGame()">New Game</button>
+</div></header><section class="hero">
+    <div id="mode" class="mode">🎬 Random Game</div>
+    <h1>Guess the movie</h1><p class="muted">10 guesses · green = exact · yellow = close · red = no match</p><div class="stats"><div class="pill">Guess <b id="count">0</b>/10</div><div class="pill">Films <b id="total">0</b></div></div></section><div class="search"><input id="q" placeholder="Type an Arabic or English movie title…" autocomplete="off"><div id="s" class="suggestions"></div></div><section class="board"><div class="row"><div class="cell head movie">Movie</div><div class="cell head">Year</div><div class="cell head">Director</div><div class="cell head">Lead Actor</div><div class="cell head">Lead Actress</div><div class="cell head">Genre</div><div class="cell head">Rating</div></div><div id="rows"></div><div id="empty" class="empty">Start by searching for a movie.</div></section><div class="help">
+  Year is close within 5 years. Rating is close within 1 point. Arrows show whether the target is higher or lower.
+  <br><br>
+  Ratings are based on elcinema.com.
+</div></main><div id="modal" class="modal"><div class="modalbox"><div class="win" id="result"></div><div class="answer" id="ans"></div><p id="info" class="muted"></p><button onclick="closeModal()">Continue</button></div></div>
+<script>
+// Embedded database. No CSV, server, internet connection, or external assets are required.
+const raw=`
+باب الحديد|Cairo Station|1958|Youssef Chahine|Youssef Chahine|Hind Rostom|Crime|8.2
+الفيل الأزرق|The Blue Elephant|2014|Marwan Hamed|Karim Abdel Aziz|Nelly Karim|Thriller|8.8
+إشتباك|Clash|2016|Mohamed Diab|Hany Adel|Nelly Karim|Drama|8
+عسل أسود|Bittersweet|2010|Khaled Marei|Ahmed Helmy|Amy Samir Ghanem|Comedy|8.9
+الأصدقاء الثلاثة|The Three Friends|1966|Ahmed Diaa Aldin|Ahmed Ramzy|Nabila Ebied|Comedy|5.5
+أصحاب... ولا أعزّ|Perfect Strangers|2022|Wissam Smayra|Eyad Nassar|Mona Zaki|Comedy|4.6
+٦٧٨|Cairo 6,7,8|2010|Mohamed Diab|Bassem Samra|Bushra|Drama|6
+عمارة يعقوبيان|The Yacoubian Building|2006|Marwan Hamed|Adel Emam|Hend Sabry|Drama|8
+ظرف طارق|Tarek's Situation|2006|Wael Ihsan|Ahmed Helmy|Nour|Romance|8.2
+زكي شان|Zaki Chan|2005|Wael Ihsan|Ahmed Helmy|Yasmin Abdulaziz|Comedy|7.7
+المومياء|The Night of Counting the Years|1969|Shadi Abdel Salam|Ahmed Marei|Nadia Lotfi|Drama|8.9
+1000 مبروك|1000 Mabrouk|2009|Ahmed Nader Galal|Ahmed Helmy|Laila Ezz El Arab|Comedy|8.6
+بلبل حيران|Bewildered Bolbol|2010|Khaled Marei|Ahmed Helmy|Zeina|Comedy|7.1
+على جنب يا اسطى|Ala Ganb Yasta|2008|Saeed Hamed|Ashraf Abdel Baky|Rogena|Comedy|8.3
+مطب صناعي|Life's Speed Bump|2006|Wael Ihsan|Ahmed Helmy|Nour|Comedy|7.5
+جعلتني مجرماً|She Made Me a Criminal|2006|Amr Arafa|Ahmed Helmy|Ghada Adel|Romance|6.4
+تراب الماس|Diamond Dust|2018|Marwan Hamed|Asser Yassin|Menna Shalabi|Mystery|8.2
+١٢٢|122|2019|Yasser Al Yasseri|Tarek Lotfy|Amina Khalil|Horror|6.5
+حرب كرموز|Karmouz War|2018|Peter Mimi|Amir Karara|Ghada Abdel Razek|Action|7.9
+آسف على الازعاج|Sorry For Disturbance|2008|Khaled Marei|Ahmed Helmy|Menna Shalabi|Comedy|8.8
+الفيل الأزرق ٢|The Blue Elephant 2|2019|Marwan Hamed|Karim Abdel Aziz|Nelly Karim|Thriller|8.6
+ولاد العم|Escaping Tel Aviv|2009|Sherif Arafa|Karim Abdel Aziz|Mona Zaki|Action|8.6
+الناظر|The Headmaster|2000|Sherif Arafa|Alaa Waley El Din|Basma|Comedy|8.3
+فول الصين العظيم|The Great Fava Beans of China|2004|Sherif Arafa|Mohamed Henedi|Kamala Kampoo Na Ayudha|Comedy|6.5
+حملة فرعون|Pharaoh's War|2019|Raouf Abdul Aziz|Amr Saad|Ruby|Action|5.3
+التجربة الدنماركية|The Danish Experience|2003|Ali Idris|Adel Emam|Nicole Saba|Comedy|6.8
+السفارة في العمارة|The Embassy in the Building|2005|Amr Arafa|Adel Emam|Dalia AlBehery|Comedy|6.9
+حسن و مرقص|Hassan and Marcus|2008|Ramy Imam|Adel Emam|Lebleba|Drama|6.7
+كده رضا|Can’t Complain|2007|Ahmed Nader Galal|Ahmed Helmy|Menna Shalabi|Comedy|8.5
+ابو علي|Abu Ali|2005|Ahmed Nader Galal|Karim Abdel Aziz|Mona Zaki|Drama|8
+عريس من جهة أمنية|A Groom from a Security Agency|2004|Ali Idris|Adel Emam|Haala Shiha|Comedy|7.3
+ولاد رزق|Sons of Rizk|2015|Tarek Al-Aryan|Ahmed Ezz|Nesreen Ameen|Action|7.6
+سهر الليالي|Sleepless Nights|2003|Hani Khalifa|Ahmed Helmy|Mona Zaki|Drama|7.5
+اللمبي|El Lemby|2002|Wael Ihsan|Muhammad Saad|Abla Kamel|Comedy|7.7
+صنع في مصر|Made in Egypt|2014|Amr Salama|Ahmed Helmy|Yasmin Raeis|Comedy|5.8
+المصلحة|The Deal|2012|Sandra Nashaat|Ahmad Ezz|Zeina|Action|8.2
+أسماء|Asmaa|2011|Amr Salama|Maged El Kedwany|Hind Sabri|Drama|8.1
+زهايمر|Alzheimer's|2010|Amr Arafa|Adel Emam|Nelly Karim|Comedy|7.5
+الجزيرة|The Island|2007|Sherif Arafa|Ahmed El Sakka|Hend Sabry|Action|8.6
+المصير|Destiny|1997|Youssef Chahine|Nour El-Sherif|Laila Eloui|Drama|7.4
+شيخ جاكسون|Sheikh Jackson|2017|Amr Salama|Ahmad El-Fishawi|Yasmin Raeis|Drama|6.6
+صعيدى فى الجامعة الأمريكية|Upper Egyptian in the American University|1998|Saeed Hamed|Mohamed Henedi|Mona Zaki|Comedy|8
+الإرهاب والكباب|Terrorism and Kebab|1992|Sherif Arafa|Adel Emam|Yousra|Action|8.8
+طير أنت|Fly Out|2009|Ahmed El Gendy|Ahmed Mekky|Donia Samir Ghanem|Comedy|8.1
+مرجان أحمد مرجان|Morgan Ahmed Morgan|2007|Ali Idris|Adel Emam|Mervat Amin|Comedy|7
+فاصل ونعود|A Break We'll Be Right Back|2011|Ahmed Nader Galal|Karim Abdel Aziz|Dina Fouad|Comedy|8.2
+الخلية|The Cell|2017|Tarek Al-Aryan|Ahmed Ezz|Amina Khalil|Action|7.9
+يا أنا يا خالتي|Me or My Aunt|2005|Saeed Hamed|Mohamed Henedi|Donia Samir Ghanem|Comedy|6.8
+جاءنا البيان التالي|The Following Statement Came To Us|2001|Saeed Hamed|Mohamed Henedi|Hanan Turk|Comedy|7.7
+إبراهيم الأبيض|Ibrahim El-Abyad|2009|Marwan Hamed|Ahmed El Sakka|Hend Sabry|Action|7.5
+الكيت كات|Kit Kat|1991|Daoud Abdel Sayed|Mahmoud Abdel Aziz|Aaidah Riyadh|Comedy|8.9
+واحد من الناس|One of the People|2006|Ahmed Nader Galal|Karim Abdel Aziz|Menna Shalabi|Drama|8.5
+نادي الرجال السري|The Secret Men Club|2019|Khaled Al-Halafawi|Karim Abdel Aziz|Ghada Adel|Comedy|8
+الكنز: الحقيقة والخيال|The Treasure: Truth & Imagination|2017|Sherif Arafa|Mohamed Ramadan|Hend Sabry|Drama|7.9
+لف ودوران|Flimflam|2016|Khaled Marei|Ahmed Helmy|Donia Samir Ghanem|Comedy|6.9
+هيبتا: المحاضرة الأخيرة|Hepta: The Last Lecture|2016|Hadi El Bagoury|Amr Youssef|Gamila Awad|Romance|8
+غبي منه فيه|A Natural Born Fool|2004|Ramy Imam|Hani Ramzi|Nelly Karim|Comedy|6.7
+ملاكي اسكندرية|Alexandria, Private|2005|Sandra Nashaat|Ahmed Ezz|Ghada Adel|Crime|8.2
+فيلم ثقافى|A Cultural Film|2000|Mohamed Amin|Ahmed Rizq|Ragaa Al-Giddawy|Comedy|8.4
+على جثتي|Over My Dead Body|2013|Mohamed Bakir|Ahmed Helmy|Ghada Adel|Comedy|5.7
+عودة الابن الضال|Return of the Prodigal Son|1976|Youssef Chahine|Mahmoud El Meligy|Huda Sultan|Drama|8
+سمير وشهير وبهير|Sameer & Shaheer & Baheer|2010|Moataz El Tony|Shiko|Amy Samir Ghanem|Comedy|8.4
+H دبووور|H Dabbour|2008|Ahmed El Gendy|Ahmed Mekky|Engy Wegdan|Comedy|6.4
+الحرب العالمية الثالثة|World War III|2014|Ahmed El Gendy|Ahmad Fahmy|Inam Salusah|Comedy|7.4
+لا تراجع و لا استسلام (القبضة الدامية)|No Retreat, No Surrender|2010|Ahmed El Gendy|Ahmed Mekky|Donia Samir Ghanem|Comedy|8.1
+الناصر صلاح الدين|Saladin|1963|Youssef Chahine|Ahmad Mazhar|Nadia Lotfi|Drama|8.6
+يوم الدين|Yomeddine|2018|Abu Bakr Shawky|Rady Gamal|Shahira Fahmy|Adventure|7.9
+الأصليين|The Originals|2017|Marwan Hamed|Maged El Kedwany|Menna Shalabi|Drama|7.3
+ابن القنصل|The Consul's Son|2010|Amr Arafa|Khaled Saleh|Ghada Adel|Comedy|8.1
+اللمبي 8 جيجا|Lembi 8 Giga|2010|Ashraf Fayeq|Muhammad Saad|Mai Ezz ElDein|Comedy|6.5
+موسى|Mousa|2021|Peter Mimi|Karim Mahmoud Abdel Aziz|Asmaa Aboul Yazeed|Action|7.9
+كيرة والجن|Kira & El Gen|2022|Marwan Hamed|Karim Abdel Aziz|Hend Sabry|Drama|7.9
+تصبح على خير|Goodnight|2017|Mohamed Samy|Tamer Hosny|Dorra Zarrouk|Comedy|7.8
+وش اجرام|Born to Be a Criminal|2006|Wael Ihsan|Mohamed Henedi|Lebleba|Action|7.1
+لا مؤاخذة|Excuse My French|2014|Amr Salama|Ahmed Dash|Kinda Alloush|Drama|7.2
+همام في أمستردام|Hammaam in Amsterdam|1999|Saeed Hamed|Mohamed Henedi|Monalisa|Comedy|7.6
+في محطة مصر|At Cairo's Railway Station|2006|Ahmed Nader Galal|Karim Abdel Aziz|Menna Shalabi|Comedy|8.1
+البدلة|The Suit|2018|Mohamed Gamal Al Adl|Tamer Hosny|Amina Khalil|Action|7.4
+هي فوضى..؟|Chaos, This Is?|2007|Youssef Chahine|Khaled Saleh|Menna Shalabi|Drama|7.6
+احكي يا شهرزاد|Scheherazade, Tell Me a Story|2009|Yousry Nasrallah|Hassan El Raddad|Mona Zaki|Drama|6.6
+ولاد رزق ٢: عودة أسود الأرض|Sons of Rizk 2: Return of the Lions of the Land|2019|Tarek Al-Aryan|Ahmed Ezz|Ghada Adel|Drama|7.9
+تيمور وشفيقة|Taimour & Shafi'aa|2007|Khaled Marei|Ahmed El Sakka|Mona Zaki|Action|7.9
+بنك الحظ|Monopoly (The Bank of Luck)|2017|Ahmed El Gendy|Akram Hosni|Lobna Mahmoud|Comedy|7.3
+ساعة ونص|An Hour and a Half|2012|Wael Ihsan|Ahmed Al Fishawy|Somaya El Khashab|Drama|8.5
+عسكر في المعسكر|Soldier In the Camp|2003|Mohamed Yassin|Mohamed Henedi|Lekaa El Khamisy|Comedy|6
+زوجة رجل مهم|The Wife of an Important Man|1988|Mohamed Khan|Ahmed Zaki|Mervat Amin|Drama|8.8
+دعاء الكروان|The Nightingale's Prayer|1959|Henry Barakat|Ahmad Mazhar|Faten Hamama|Drama|8.7
+تيتو|Tito|2004|Tarek Al-Aryan|Ahmed El Sakka|Hanan Turk|Drama|8.1
+أرض الخوف|Land of Fear|2000|Daoud Abdel Sayed|Ahmed Zaki|Farah|Drama|8.6
+اللي بالي بالك|You Know Who|2003|Wael Ihsan|Muhammad Saad|Nivin Mandour|Comedy|7.7
+قلب أمه|Mama's Boy|2018|Amr Salah|Hesham Maged|Dalal Abdel Aziz|Comedy|7.3
+الشبح|The Ghost|2007|Amr Arafa|Ahmed Ezz|Zeina|Action|7.6
+أمير الظلام|The Prince of Darkness|2002|Ramy Imam|Adel Emam|Shereen Seif El-Nasr|Comedy|6.1
+رمضان مبروك أبو العلمين حمودة|Ramadan Mabrouk Abou El Allamen Hamouda|2008|Wael Ihsan|Mohamed Henedi|Cyrine Abdel Nour|Comedy|8
+بوبوس|Bobbos|2009|Wael Ihsan|Adel Emam|Yousra|Comedy|5.9
+الجزيرة ٢|The Island 2|2014|Sherif Arafa|Ahmed El Sakka|Hend Sabry|Action|8.1
+تيتة رهيبة|Horrible Grandma|2012|Sameh Abdel Aziz|Mohamed Henedi|Amy Samir Ghanem|Comedy|6.5
+إسكندرية ليه؟|Alexandria… Why?|1979|Youssef Chahine|Mahmood Al-Meleji|Mohsena Tawfiq|Drama|8.4
+من أجل زيكو|For Zeko|2022|Peter Mimi|Karim Mahmoud Abdel Aziz|Menna Shalabi|Comedy|7
+الرهينة|The Hostage|2006|Sandra Nashaat|Ahmed Ezz|Yasmin Abdulaziz|Action|7.7
+ميدو مشاكل|Mido the Troublemaker|2003|Mohamed El-Naggar|Ahmed Helmy|Sherine Abdel Wahab|Comedy|5.9
+لص بغداد|The Thief of Baghdad|2020|Ahmed Khaled Mousa|Mohamed Adel Emam|Yasmine Raeis|Comedy|6.8
+ليلة هنا وسرور|The Night of Hana and Sorour|2018|Hussien El Menbawy|Mohamed Adel Emam|Yasmine Sabry|Comedy|6.5
+عندليب الدقي|The Nightingale of Dokki|2008|Wael Ihsan|Mohamed Henedi|Heba Nour|Comedy|6.6
+افريكانو|Africano|2001|Amr Arafa|Ahmed El Sakka|Mona Zaki|Drama|7.2
+من 30 سنة|30 Years Ago|2016|Amr Arafa|Ahmed El Sakka|Mona Zaki|Drama|8.2
+كتكوت|Katkout|2006|Ahmad Awwad|Muhammad Saad|Heba ElSisi|Comedy|5.5
+الحريف|The Street Player|1983|Mohamed Khan|Adel Emam|Ferdoos Abdel Hamid|Drama|8.7
+الإرهابي|The Terrorist|1994|Nader Galal|Adel Emam|Sherine|Drama|7.1
+حرب أطاليا|Italia's War|2005|Ahmad Saleh|Ahmed El Sakka|Nelly Karim|Action|6.2
+عوكل|Okal|2004|Mohamed El-Naggar|Muhammad Saad|Nour|Romance|6.2
+ڤوي! ڤوي! ڤوي!|Voy! Voy! Voy!|2023|Omar Hilal|Muhammad Farrag|Nelly Karim|Comedy|5.8
+وقفة رجالة|A Stand Worthy of Men|2021|Ahmed El Gendy|Maged El Kedwany|Amina Khalil|Comedy|8.2
+صاحب المقام|The Enshrined Saint|2020|Mohamed Gamal Al Adl|Asser Yassin|Yousra|Drama|6.7
+هروب إضطراري|Forced Escape|2017|Ahmed Khaled Mousa|Ahmed El Sakka|Ghada Adel|Action|7.5
+بوحه|Booha|2005|Ramy Imam|Muhammad Saad|Mai Ezz ElDein|Comedy|6.5
+فتاة المصنع|Factory Girl|2014|Mohamed Khan|Hani Adel|Yasmine Raeis|Drama|7.1
+بحب السيما|I Love Cinema|2004|Osama Fawzy|Mahmoud Hemida|Layla Olwy|Drama|6.3
+بنات العم|Female Cousins|2012|Ahmed Samir Farag|Ahmad Fahmy|Yosra El Lozy|Comedy|7.2
+حرامية فى كى جى تو|Thieves in KG2|2002|Sandra Nashaat|Karim Abdel Aziz|Hanan Turk|Comedy|7.5
+بوشكاش|Boshkash|2008|Ahmed Yousri|Muhammad Saad|Zeina|Comedy|5.1
+المتسول|The Beggar|1983|Ahmed El-Sabawy|Adel Emam|Esaad Younes|Comedy|7.7
+عمر و سلمي ٢|Omar & Salma 2|2009|Ahmed ElBadry|Tamer Hosny|Mai Ezz ElDein|Romance|7.4
+حريم كريم|Kareem's Women|2005|Ali Idris|Mostafa Amar|Yasmin Abdulaziz|Comedy|5.6
+كازابلانكا|Casablanca|2019|Peter Mimi|Amir Karara|Ghada Adel|Action|7.7
+أهواك|I Adore You|2015|Mohamed Samy|Tamer Hosny|Ghada Adel|Comedy|6.4
+كابتن هيما|Captain Hima|2008|Nasr Mahrous|Tamer Hosny|Zeina|Comedy|6.9
+أحلى الأوقات|Best Times|2004|Hala Khalil|Khaled Saleh|Hanan Turk|Drama|6.9
+محامي خُلع|Her Divorce Lawyer|2002|Mohamed Yassin|Hani Ramzi|Dalia AlBehery|Comedy|6.7
+عمر وسلمى|Omar & Salma|2007|Akram Farid|Tamer Hosny|Mai Ezz ElDein|Romance|6.7
+الفلوس|The Money|2019|Said El Marouk|Tamer Hosny|Zeina|Comedy|6.5
+الكنز 2: الحب والمصير|The Treasure : Love & Destiny|2019|Sherif Arafa|Mohamed Ramadan|Hend Sabry|Drama|7.3
+الحاسه السابعه|The Seventh Sense|2005|Ahmed Mekky|Ahmed Al Fishawy|Rania Kourdy|Comedy|6.3
+إشاعة حب|Eshaet Hob|1960|Fatin Abdel Wahab|Omar Sharif|Soad Hosny|Comedy|8.3
+سلام يا صاحبي|Goodbye My Friend|1986|Nader Galal|Adel Emam|Sawsan Badr|Action|7.3
+في شقة مصر الجديدة|In the Heliopolis Flat|2007|Mohamed Khan|Khaled Abol Naga|Ghada Adel|Romance|7.2
+١٨ يوم|18 Days|2011|Yousry Nasrallah|Amr Waked|Mona Zaki|Drama|7.6
+كباريه|Cabareeh|2008|Sameh Abdel Aziz|Salah Abdallah|Rania Youssef|Drama|7.7
+نور عيني|Light of My Eyes|2010|Wael Ihsan|Tamer Hosny|Menna Shalabi|Romance|7.9
+رسائل البحر|Messages from the Sea|2010|Daoud Abdel Sayed|Asser Yassin|Basma|Drama|7.3
+دكان شحاتة|Shehata's Store|2009|Khaled Youssef|Amr Saad|Haifa Wehbe|Drama|7.5
+خيال مآتة|Scarecrow|2019|Khaled Marei|Ahmed Helmy|Menna Shalabi|Comedy|5.2
+طلق صناعي|Induced Labor|2018|Khaled Diab|Maged El Kedwany|Horeya Farghaly|Comedy|7.4
+مافيا|Mafia|2002|Sherif Arafa|Ahmed El Sakka|Mona Zaki|Action|8
+طيور الظلام|Birds of Darkness|1995|Sherif Arafa|Adel Emam|Yousra|Drama|8.3
+البريء|The Innocent|1986|Atef El-Tayeb|Ahmed Zaki|Elham Shahein|Drama|8.5
+تتح|Tattah|2013|Sameh Abdel Aziz|Muhammad Saad|Dolly Shaheen|Comedy|7.1
+حنفي الأبهة|His Highness Hanafy|1990|Adel Emam|Farouq Al Fishawy|Huda Ramzi|Crime|7.4
+إحنا بتوع الأتوبيس|We Are the Bus People|1979|Hussein Kamal|Adel Emam|Moshira Ismail|Drama|8.6
+السيد أبو العربي وصل|Mr. Abu Al-Araby Arrived|2005|Mohsen Ahmed|Hani Ramzi|Menna Shalabi|Comedy|5.3
+الدادة دودي|Nanny Doody|2008|Ali Idris|Salah Abdallah|Yasmin Abdulaziz|Comedy|5.9
+صايع بحر|The Beach Loafer|2004|Ali Ragab|Ahmed Helmy|Yasmin Abdulaziz|Comedy|5.3
+حاحا وتفاحة|Haha W Tofaha|2005|Akram Farid|Talaat Zakaria|Yasmin Abdulaziz|Comedy|4.7
+بدل فاقد|Replacement|2009|Ahmad Alaa Aldeeb|Ahmed Ezz|Menna Shalabi|Action|7.2
+حرامية في تايلاند|Thieves in Thailand|2003|Sandra Nashaat|Karim Abdel Aziz|Hanan Turk|Comedy|6.9
+عبود على الحدود|Abboud on the Border|1999|Sherif Arafa|Alaa Wali El Din|Ghada Adel|Comedy|7.6
+خارج على القانون|Convicted Outlaw|2007|Ahmed Nader Galal|Karim Abdel Aziz|Maya Nasry|Drama|7.6`;
+const films=raw.trim().split(/\n+/).map((x,i)=>{let p=x.split('|');return{id:i+1,arabic_title:p[0],english_title:p[1],release_year:+p[2],director:p[3],lead_actor:p[4],lead_actress:p[5],genre:p[6],rating:+p[7]}});
+let target,guesses=[];const $=x=>document.getElementById(x);const norm=x=>(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();const esc=x=>String(x).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));function getDailyFilm(){
+    const today=new Date();
+    const dateKey=today.getFullYear()+'-'+
+        String(today.getMonth()+1).padStart(2,'0')+'-'+
+        String(today.getDate()).padStart(2,'0');
+
+    let hash=0;
+
+    for(let i=0;i<dateKey.length;i++){
+        hash=((hash<<5)-hash)+dateKey.charCodeAt(i);
+        hash|=0;
+    }
+
+    hash=Math.abs(hash);
+
+    return films[hash%films.length];
+}
+
+function getTodayKey(){
+  const today=new Date();
+  return today.getFullYear()+'-'+
+    String(today.getMonth()+1).padStart(2,'0')+'-'+
+    String(today.getDate()).padStart(2,'0');
+}
+
+function dailyGame(){
+  const today=getTodayKey();
+  const saved=JSON.parse(localStorage.getItem('dailyGame'));
+
+  target=getDailyFilm();
+  $('mode').textContent='📅 Daily Film';
+
+  if(saved && saved.date===today){
+    guesses=saved.guesses
+      .map(id=>films.find(f=>f.id===id))
+      .filter(Boolean);
+  }else{
+    guesses=[];
+    localStorage.setItem('dailyGame',JSON.stringify({
+      date:today,
+      guesses:[],
+      finished:false
+    }));
+  }
+
+  render();
+
+  const finished=saved && saved.date===today && saved.finished;
+
+  if(finished){
+    $('result').textContent=saved.won?'YOU GOT IT':'GAME OVER';
+    $('ans').textContent=target.arabic_title;
+    $('info').textContent=
+      target.english_title+' · '+
+      target.release_year+' · '+
+      target.director+' · '+
+      target.genre+' · '+
+      target.rating;
+
+    $('modal').classList.add('show');
+    $('q').disabled=true;
+  }else{
+    $('q').disabled=false;
+    $('q').focus();
+  }
+}
+
+function newGame(){
+  target=films[Math.floor(Math.random()*films.length)];
+  guesses=[];
+  $('mode').textContent='🎲 Random Game';
+  $('q').disabled=false;
+  render();
+  $('q').focus();
+}
+function rel(a,b,type){if(type==='year'){let d=Math.abs(a-b);return d===0?'match':d<=5?'partial':'wrong';}if(type==='rating'){let d=Math.abs(a-b);return d===0?'match':d<=1?'partial':'wrong';}return norm(a)===norm(b)?'match':'wrong'}
+function render(){ 
+$('total').textContent=films.length;
+$('count').textContent=guesses.length;
+$('empty').style.display=guesses.length?'none':'block';
+
+$('rows').innerHTML=guesses.map(g=>{
+let vals=[
+['release_year',rel(g.release_year,target.release_year,'year')],
+['director',rel(g.director,target.director)],
+['lead_actor',rel(g.lead_actor,target.lead_actor)],
+['lead_actress',rel(g.lead_actress,target.lead_actress)],
+['genre',rel(g.genre,target.genre)],
+['rating',rel(g.rating,target.rating,'rating')]
+];
+
+return '<div class="row"><div class="cell movie"><div>'+
+esc(g.arabic_title)+'<small>'+esc(g.english_title)+'</small></div></div>'+
+vals.map(v=>
+'<div class="cell '+v[1]+'">'+
+esc(g[v[0]])+
+((v[0]==='release_year'||v[0]==='rating')&&v[1]!=='match'
+?'<span class="arrow">'+
+(Number(g[v[0]])<Number(target[v[0]])?'↑':'↓')+
+'</span>'
+:'')+
+'</div>'
+).join('')+
+'</div>'
+}).join('')
+}
+function pick(f){
+  if(!f||guesses.some(x=>x.id===f.id)||guesses.length>=10)return;
+
+  guesses.push(f);
+
+  $('q').value='';
+  $('s').innerHTML='';
+  render();
+
+  const isDaily=$('mode').textContent.includes('Daily');
+  const won=f.id===target.id;
+  const lost=!won && guesses.length===10;
+
+  if(isDaily){
+    localStorage.setItem('dailyGame',JSON.stringify({
+      date:getTodayKey(),
+      guesses:guesses.map(x=>x.id),
+      finished:won||lost,
+      won:won
+    }));
+  }
+
+  if(won){
+    $('result').textContent='YOU GOT IT';
+    $('ans').textContent=target.arabic_title;
+   $('info').innerHTML=
+    '<b>'+esc(target.english_title)+'</b><br><br>'+
+    'Year: '+esc(target.release_year)+'<br>'+
+    'Director: '+esc(target.director)+'<br>'+
+    'Lead Actor: '+esc(target.lead_actor)+'<br>'+
+    'Lead Actress: '+esc(target.lead_actress)+'<br>'+
+    'Genre: '+esc(target.genre)+'<br>'+
+    'Rating: '+esc(target.rating);
+
+    $('modal').classList.add('show');
+
+    if(isDaily)$('q').disabled=true;
+
+}else if(lost){
+  $('result').textContent='GAME OVER';
+  $('ans').textContent=target.arabic_title;
+
+  $('info').innerHTML=
+    '<b>'+esc(target.english_title)+'</b><br><br>'+
+    'Year: '+esc(target.release_year)+'<br>'+
+    'Director: '+esc(target.director)+'<br>'+
+    'Lead Actor: '+esc(target.lead_actor)+'<br>'+
+    'Lead Actress: '+esc(target.lead_actress)+'<br>'+
+    'Genre: '+esc(target.genre)+'<br>'+
+    'Rating: '+esc(target.rating);
+
+  $('modal').classList.add('show');
+
+  if(isDaily)$('q').disabled=true;
+}
+}
+$('q').addEventListener('input',()=>{let q=norm($('q').value);if(!q){$('s').innerHTML='';return}let list=films.filter(f=>!guesses.some(g=>g.id===f.id)&&(norm(f.arabic_title).includes(q)||norm(f.english_title).includes(q))).slice(0,10);$('s').innerHTML=list.map(f=>'<div class="suggestion" data-id="'+f.id+'"><span>'+esc(f.arabic_title)+'</span><span class="muted">'+esc(f.english_title)+'</span></div>').join('');
+$('s').querySelectorAll('.suggestion').forEach(e=>e.onclick=()=>pick(films.find(f=>f.id==e.dataset.id)))})
+$('q').addEventListener('keydown',e=>{if(e.key==='Enter'){let e1=$('s').querySelector('.suggestion');if(e1)pick(films.find(f=>f.id==e1.dataset.id))}});function closeModal(){$('modal').classList.remove('show')}dailyGame();
+</script></body></html>
